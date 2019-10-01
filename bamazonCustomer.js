@@ -26,12 +26,12 @@ function getItems() {
 
 function renderItems(err, res) {
   if (err) throw err;
-  console.table(res);
-  console.log('Item ID  Name           Price');
+  // console.table(res);
+  console.log('ID  Name           Price');
   res.forEach(e => {
     if (e.stock_quantity > 0) {
       inventory[e.item_id] = e.stock_quantity;
-      console.log(`${e.item_id}    | ${e.product_name} | ${e.price}`);
+      console.log(`${e.item_id}  | ${e.product_name} | ${e.price}`);
     }
   });
   askItem();
@@ -41,7 +41,12 @@ function askItem() {
     .prompt({
       name: 'item_id',
       type: 'number',
-      message: 'Please enter ID of item you want to buy OR 0 for EXIT'
+      message: 'Please enter ID of item you want to buy OR 0 for EXIT',
+      validate: function(input) {
+        console.log('Validating ID input', input, console.log(inventory));
+        if (input === 0 || inventory.hasOwnProperty([input])) return true;
+        else return 'Please select item from the list';
+      }
     })
     .then(askQuantity);
 }
@@ -60,9 +65,7 @@ function askQuantity(answer) {
 }
 
 function sellItem(answer) {
-  let quantity = answer.quantity;
-  console.log(item_id, quantity);
-  let remaining = inventory[item_id] - quantity;
+  let remaining = inventory[item_id] - answer.quantity;
   if (remaining < 0) {
     console.log('Insufficient quantity!');
     askItem();

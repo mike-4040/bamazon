@@ -26,7 +26,6 @@ function getItems() {
 
 function renderItems(err, res) {
   if (err) throw err;
-  // console.table(res);
   console.log('ID  Name           Price');
   res.forEach(item => {
     if (item.stock_quantity > 0) {
@@ -34,9 +33,9 @@ function renderItems(err, res) {
       console.log(`${item.item_id}  | ${item.product_name} | ${item.price}`);
     }
   });
-  console.log(inv);
   askItem();
 }
+
 function askItem() {
   inquirer
     .prompt({
@@ -44,6 +43,7 @@ function askItem() {
       type: 'input',
       message: 'Please enter ID of item you want to buy OR 0 for EXIT',
       validate: function(input) {
+        input = parseInt(input);
         if (input === 0 || inv.hasOwnProperty(input)) return true;
         else return 'Please select item from the list';
       }
@@ -52,14 +52,18 @@ function askItem() {
 }
 
 function askQuantity(answer) {
-  item_id = answer.item_id;
+  item_id = parseInt(answer.item_id);
   if (item_id === 0) connection.end();
   else
     inquirer
       .prompt({
         name: 'quantity',
-        type: 'number',
-        message: 'Please enter desired quantity'
+        type: 'input',
+        message: 'Please enter desired quantity',
+        validate: function(input) {
+          if (input > 0) return true;
+          else return 'Please enter positive number';
+        }
       })
       .then(sellItem);
 }
@@ -67,7 +71,7 @@ function askQuantity(answer) {
 function sellItem(answer) {
   let remaining = inv[item_id] - answer.quantity;
   if (remaining < 0) {
-    console.log('Insufficient quantity!');
+    console.log(`We have only ${inv[item_id]} in stock, sorry...`);
     askItem();
   } else recordSale(item_id, remaining);
 }
@@ -82,5 +86,5 @@ function recordSale(item_id, quantity) {
 
 function confirmSale(err) {
   console.log(err ? err : 'SOLD');
-  askItem();
+  getItems();
 }

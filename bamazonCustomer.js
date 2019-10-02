@@ -26,13 +26,22 @@ function getItems() {
 
 function renderItems(err, res) {
   if (err) throw err;
-  console.log('ID  Name           Price');
+  console.log('\nID  Name           Price');
+
   res.forEach(item => {
     if (item.stock_quantity > 0) {
       inv[item.item_id] = item.stock_quantity;
       console.log(`${item.item_id}  | ${item.product_name} | ${item.price}`);
     }
   });
+
+  if (Object.keys(inv).length === 0) {
+    console.log('SOLD OUT! Store closed, sorry. Please come tomorrow.');
+    connection.end(err => {
+      if (err) throw err;
+    });
+    return;
+  }
   askItem();
 }
 
@@ -45,7 +54,7 @@ function askItem() {
       validate: function(input) {
         input = parseInt(input);
         if (input === 0 || inv.hasOwnProperty(input)) return true;
-        else return 'Please select item from the list';
+        else return 'Please select item from the list:';
       }
     })
     .then(askQuantity);
@@ -53,26 +62,32 @@ function askItem() {
 
 function askQuantity(answer) {
   item_id = parseInt(answer.item_id);
-  if (item_id === 0) connection.end();
+  if (item_id === 0)
+    // User want to leave store
+    connection.end(err => {
+      if (err) throw err;
+    });
   else
     inquirer
       .prompt({
         name: 'quantity',
         type: 'input',
-        message: 'Please enter desired quantity',
+        message: "Please enter desired quantity or 0 if you don't want any:",
         validate: function(input) {
-          if (input > 0) return true;
-          else return 'Please enter positive number';
+          if (input >= 0) return true;
+          else return 'Please enter valid number';
         }
       })
       .then(sellItem);
 }
 
 function sellItem(answer) {
-  let remaining = inv[item_id] - answer.quantity;
+  const requested = parseInt(answer.quantity);
+  if (requested === 0) return getItems(); //User dont't want to buy this item.
+  const remaining = inv[item_id] - requested;
   if (remaining < 0) {
-    console.log(`We have only ${inv[item_id]} in stock, sorry...`);
-    askItem();
+    console.log(`We have only ${inv[item_id]} in stock, sorry...\n`);
+    askQuantity({ item_id: item_id });
   } else recordSale(item_id, remaining);
 }
 
